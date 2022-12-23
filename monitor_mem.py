@@ -49,6 +49,8 @@ def get_metricts(data, proc, timestamp):
     pinfo = { "timestamp":  timestamp }
     pinfo.update(proc.as_dict(attrs=config['metrics']))
     pinfo['memory'] = proc.memory_info().vms
+    if 'create_time' in pinfo:
+        pinfo['create_time'] = datetime.datetime.utcfromtimestamp(pinfo['create_time'])
     cpu_percent = subprocess.run(
         ['powershell', '-Command', 'Get-Process -Id ' + str(pinfo['pid']) + ' | Select-Object -Expand CPU'],
         capture_output=True
@@ -65,7 +67,6 @@ def save_metrics(data):
     if path.exists(config['export_dir']) is False:
         mkdir(config['export_dir'])
     if path.exists(file_path) is False:
-        archive_log(log_file_name)
         workbook = openpyxl.Workbook()
         sheet = workbook.create_sheet('logs')
         del workbook['Sheet']
@@ -79,26 +80,32 @@ def save_metrics(data):
 
     max_row = sheet.max_row
     for metrics in data:
+        max_row += 1
         for i in range(sheet.max_column):
-            max_row += 1
-            sheet.cell(row=max_row, column=i).value = metrics[sheet.cell(row=1, column=i + 1).value]
+            sheet.cell(row=max_row, column=i + 1).value = metrics[sheet.cell(row=1, column=(i + 1)).value]
 
-    workbook.save()
+    workbook.save(file_path)
     workbook.close()
+    return log_file_name
 
 def archive_log(log_file_name):
     logfiles = listdir(config['export_dir'])
-    if path.exists(config['archive_dir']):
+    if path.exists(config['archive_dir']) is False:
         mkdir(config['archive_dir'])
+
     for logfile in logfiles:
         if logfile != log_file_name:
-            zip_file_name = log_file_name + '.zip'
+
+            zip_file_name = logfile + '.zip'
             zip_file_path = config['archive_dir'] + '\\' + zip_file_name
-            with ZipFile(zip_file_name, 'w') as zipfile:
-                zipfile.write(logfile, compress_type=ZIP_DEFLATED)
+            archive_log_path = config['export_dir'] + '\\' + logfile
+
+            with ZipFile(zip_file_path, 'w') as zipfile:
+                zipfile.write(archive_log_path, compress_type=ZIP_DEFLATED)
                 zipfile.close()
+
             if path.exists(zip_file_path) is True:
-                remove(logfile)
+                remove(archive_log_path)
 
 if __name__ == '__main__':
     load_config()
@@ -108,8 +115,11 @@ if __name__ == '__main__':
         data = monitor_metrics()
         logger.info('Completed to get metrics.')
         logger.info('Start to save the log file.')
-        save_metrics(data)
+        log_file_name = save_metrics(data)
         logger.info('Completed to save the log file.')
+        logger.info('Start to archive the log file.')
+        archive_log(log_file_name)
+        logger.info('Completed to archive the log file.')
     except:
         print_exc()
         logger.error(format_exc())
