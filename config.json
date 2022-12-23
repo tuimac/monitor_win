@@ -1,6 +1,6 @@
 {
     "export_dir": "\\\\TUIMAC\\Users\\Administrator\\OneDrive\\ドキュメント\\monitor_win\\log\\host1",
-    "archive_dir": "\\\\TUIMAC\\Users\\Administrator\\OneDrive\\ドキュメント\\monitor_win\\log\\archive",
+    "archive_dir": "\\\\TUIMAC\\Users\\Administrator\\OneDrive\\ドキュメント\\monitor_win\\log\\archive\\host1",
     "metrics": ["create_time", "pid", "name", "username"],
     "max_thread": 50,
     "log_config": {

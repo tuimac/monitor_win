@@ -7,7 +7,7 @@ import subprocess
 import logging.config
 from traceback import print_exc, format_exc
 from zipfile import ZipFile, ZIP_DEFLATED
-from os import listdir, path, _exit, mkdir, remove
+from os import listdir, path, _exit, makedirs, remove
 from concurrent.futures import ThreadPoolExecutor
 from logging import getLogger
 
@@ -65,7 +65,7 @@ def save_metrics(data):
     log_file_name = datetime.datetime.now().strftime('%Y%m%d') + '.xlsx'
     file_path = config['export_dir'] + '\\' + log_file_name
     if path.exists(config['export_dir']) is False:
-        mkdir(config['export_dir'])
+        makedirs(config['export_dir'])
     if path.exists(file_path) is False:
         workbook = openpyxl.Workbook()
         sheet = workbook.create_sheet('logs')
@@ -91,7 +91,7 @@ def save_metrics(data):
 def archive_log(log_file_name):
     logfiles = listdir(config['export_dir'])
     if path.exists(config['archive_dir']) is False:
-        mkdir(config['archive_dir'])
+        makedirs(config['archive_dir'])
 
     for logfile in logfiles:
         if logfile != log_file_name:
