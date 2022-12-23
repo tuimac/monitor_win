@@ -1,7 +1,7 @@
-import subprocess
+from zipfile import ZipFile, ZIP_DEFLATED
+from os import listdir
 
-cpu_percent = subprocess.run(
-    ['powershell', '-Command', 'Get-Process -Id ' + str(9272) + ' | Select-Object -Expand CPU'],
-    capture_output=True
-).stdout.decode().replace('\r\n', '')
-print(cpu_percent)
+with ZipFile('test.zip', 'w') as zipfile:
+    zipfile.write('config.json', compress_type=ZIP_DEFLATED)
+    zipfile.write('main.log', compress_type=ZIP_DEFLATED)
+    zipfile.close()
