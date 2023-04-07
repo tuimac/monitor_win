@@ -61,7 +61,17 @@ def get_metricts(data, proc, timestamp):
         pinfo['cpu_percent'] = float(cpu_percent)
     data.append(pinfo)
 
-def save_metrics(data):
+def get_disk_metrics():
+    disk_info = psutil.disk_usage('/')
+    return {
+        "timestamp": datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        "disk_total": disk_info.total,
+        "disk_usage": disk_info.used,
+        "disk_free": disk_info.free
+    }
+
+def save_metrics(data, disk_data):
+    # Initialization
     log_file_name = datetime.datetime.now().strftime('%Y%m%d') + '.xlsx'
     file_path = config['export_dir'] + '\\' + log_file_name
     if path.exists(config['export_dir']) is False:
@@ -69,20 +79,32 @@ def save_metrics(data):
     if path.exists(file_path) is False:
         workbook = openpyxl.Workbook()
         sheet = workbook.create_sheet('logs')
+        sheet_disk = workbook.create_sheet('disk')
         del workbook['Sheet']
         index = 1
         for key in data[0]:
             sheet.cell(row=1, column=index).value = key
             index += 1
+        index = 1
+        for key in disk_data:
+            sheet_disk.cell(row=1, column=index).value = key
+            index += 1
     else:
         workbook = openpyxl.load_workbook(file_path, data_only=True)
         sheet = workbook['logs']
+        sheet_disk = workbook['disk']
 
+    # Save metrics
     max_row = sheet.max_row
     for metrics in data:
         max_row += 1
         for i in range(sheet.max_column):
             sheet.cell(row=max_row, column=i + 1).value = metrics[sheet.cell(row=1, column=(i + 1)).value]
+
+    # Save disk metrics
+    max_row = sheet_disk.max_row + 1
+    for i in range(sheet_disk.max_column):
+        sheet_disk.cell(row=max_row, column=i + 1).value = disk_data[sheet_disk.cell(row=1, column=(i + 1)).value]
 
     workbook.save(file_path)
     workbook.close()
@@ -114,8 +136,11 @@ if __name__ == '__main__':
         logger.info('Start to get metrics.')
         data = monitor_metrics()
         logger.info('Completed to get metrics.')
+        logger.info('Start to get disk metrics.')
+        disk_data = get_disk_metrics()
+        logger.info('Complete to get disk metrics.')
         logger.info('Start to save the log file.')
-        log_file_name = save_metrics(data)
+        log_file_name = save_metrics(data, disk_data)
         logger.info('Completed to save the log file.')
         logger.info('Start to archive the log file.')
         archive_log(log_file_name)
